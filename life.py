@@ -6,11 +6,6 @@ import curses
 import time
 import math
 
-stdscr = curses.initscr()
-ux = 0
-uy = 0
-width = 50
-height = 30
 
 #Sets up the curses window
 def startup():
@@ -23,9 +18,10 @@ def shutdown():
     curses.nocbreak()
     stdscr.keypad(0)
     curses.endwin()
+
 #Fills in the basic background field
 #TODO: only update affected cells per tick
-def background():
+def background(gen):
     for y in xrange(0,height):
         for x in range(0,width):
             try:
@@ -40,6 +36,7 @@ def background():
                     stdscr.addch( y, x, ord('.') )
             except curses.error:
                 pass
+    stdscr.addstr(height, 1, "gen: "+str(gen))
     #after drawing refresh the window
     stdscr.refresh()
 
@@ -69,13 +66,13 @@ class Cell:
 #of disallowing duplicates
 def addCell(x,y,cells):
     for cell in cells:
-        if cell.x == x & cell.y == y:
-            return
+        if cell.x == x and cell.y == y:
+            return cells
     cells.append(Cell(x,y))
     return cells
 
 #Finds adjacent alive cells
-def adjacentCells(cell):
+def adjacentCells(cell, cells):
     adj = []
     for other in cells:
         dx = math.fabs(cell.x-other.x)
@@ -85,10 +82,11 @@ def adjacentCells(cell):
         if other.x == cell.x and other.y == cell.y:
             adj.remove(other)
     return adj
+
 #Finds adjacent dead points
 #TODO: This could really just be surrounding elements not
 #      in adjacentCells
-def adjacentPoints(cell):
+def adjacentPoints(cell, cells):
     dead = []
     candidates =[(x,y) 
                 for x in [cell.x-1, cell.x, cell.x+1] if (x > 0) & (x < width-1)
@@ -99,7 +97,8 @@ def adjacentPoints(cell):
     for other in cells:
          cellPos.append((other.x, other.y))
     dead = difference(candidates, cellPos)
-    return dead    
+    return dead  
+  
 #The set difference of two lists a nd b
 #(assuming the lists meet set conditions of
 # uniqueness)
@@ -114,41 +113,51 @@ def step(cells):
     toRemove = []
     toAdd = []
     for cell in cells:
-        adjs = adjacentCells(cell)
+        dead.extend(adjacentPoints(cell, cells))
+    for (x,y) in dead:
+        candidate = Cell(x,y)
+        adjs = adjacentCells(candidate, cells)
+        bordering = len(adjs)
+        if bordering == 3: toAdd.append(candidate)
+    for cell in cells:
+        adjs = adjacentCells(cell, cells)
         bordering = len(adjs)
         if (bordering < 2) or (bordering > 3): toRemove.append(cell)
     for cell in toRemove:
         cells.remove(cell)
-    for cell in cells:
-        dead.extend(adjacentPoints(cell))
-    for (x,y) in dead:
-        candidate = Cell(x,y)
-        adjs = adjacentCells(candidate)
-        bordering = len(adjs)
-        if bordering == 3: toAdd.append(candidate)
-    for cell in toAdd:
+    for cell in set(toAdd):
         cells = addCell(cell.x, cell.y, cells)
     fillCells(cells) 
-    return cells       
+    return cells 
+      
 #Used for manipulating the terminal cursor for cell placement
 def mv_term_cursor(ux, uy):
         stdscr.addch( uy, ux, ord('.'))
 
-startup()
-cells = []
-cells.append(Cell(25,25))
-while 1:
-    background()
-    fillCells(cells)
-    mv_term_cursor(ux, uy)
-    c = stdscr.getch()
-    if c == ord('s'):           cells = step(cells)
-    elif c == ord('n'):         cells = addCell(ux+1, uy, cells)
-    elif c == curses.KEY_RIGHT: ux = ux + 1 if ux < width-1 else ux
-    elif c == curses.KEY_LEFT:  ux = ux - 1 if ux > 0 else ux
-    elif c == curses.KEY_UP:    uy = uy - 1 if uy > 0 else uy
-    elif c == curses.KEY_DOWN:  uy = uy + 1 if uy < height-1 else uy
-    elif c == ord('q'):
-        break
-    
-shutdown() 
+ux = 0
+uy = 0
+width = 50
+height = 30
+
+if __name__ == "__main__":
+    stdscr = curses.initscr()
+    startup()
+    cells = []
+    cells.append(Cell(25,25))
+    generation = 0
+    while 1:
+        background(generation)
+        fillCells(cells)
+        mv_term_cursor(ux, uy)
+        c = stdscr.getch()
+        if c == ord('s'):
+            cells = step(cells)
+            generation = generation+1
+        elif c == ord('n'):         cells = addCell(ux+1, uy, cells)
+        elif c == curses.KEY_RIGHT: ux = ux + 1 if ux < width-1 else ux
+        elif c == curses.KEY_LEFT:  ux = ux - 1 if ux > 0 else ux
+        elif c == curses.KEY_UP:    uy = uy - 1 if uy > 0 else uy
+        elif c == curses.KEY_DOWN:  uy = uy + 1 if uy < height-1 else uy
+        elif c == ord('q'):
+            break
+    shutdown() 
