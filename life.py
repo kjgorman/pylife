@@ -1,8 +1,8 @@
+#Author: github.com/kjgorman
 import curses
 import time
 
 stdscr = curses.initscr()
-#pad = curses.newpad(100,100)
 cells = []
 ux = 0
 uy = 0
