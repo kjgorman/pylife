@@ -21,7 +21,7 @@ def shutdown():
 
 #Fills in the basic background field
 #TODO: only update affected cells per tick
-def background(gen):
+def background(gen, nodelay):
     for y in xrange(0,height):
         for x in range(0,width):
             try:
@@ -37,6 +37,11 @@ def background(gen):
             except curses.error:
                 pass
     stdscr.addstr(height, 1, "gen: "+str(gen))
+    stdscr.addstr(height, 20, "[s]tep [n]ew [q]uit")
+    if nodelay:
+        stdscr.addstr(height, 42, "[running]")
+    else:
+        stdscr.addstr(height, 42, "[paused]")
     #after drawing refresh the window
     stdscr.refresh()
 
@@ -143,16 +148,22 @@ if __name__ == "__main__":
     stdscr = curses.initscr()
     startup()
     cells = []
-    cells.append(Cell(25,25))
     generation = 0
+    nodelay = 0
     while 1:
-        background(generation)
+        background(generation, nodelay)
         fillCells(cells)
         mv_term_cursor(ux, uy)
-        c = stdscr.getch()
-        if c == ord('s'):
+        c = stdscr.getch() #by default a blocking function
+        
+        if nodelay: time.sleep(1)
+        
+        if c == ord('s') or nodelay:
             cells = step(cells)
             generation = generation+1
+        elif c == ord('r'):
+            nodelay = 1 if nodelay == 0 else 0         
+            stdscr.nodelay(nodelay)
         elif c == ord('n'):         cells = addCell(ux+1, uy, cells)
         elif c == curses.KEY_RIGHT: ux = ux + 1 if ux < width-1 else ux
         elif c == curses.KEY_LEFT:  ux = ux - 1 if ux > 0 else ux

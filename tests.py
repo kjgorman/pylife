@@ -106,8 +106,9 @@ def containsCellAt(x,y,cells):
             return True
     return False
 
-adjacency()
-adjacentDeadPoints()
-testDeath()
-testSpawn()
-testBlinker()
+def runTests():
+    tests = [adjacency,adjacentDeadPoints,testDeath,testSpawn,testBlinker]
+    for func in tests:
+        func()
+        print "================================================"
+runTests()
