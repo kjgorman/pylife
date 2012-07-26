@@ -5,7 +5,7 @@
 import curses
 import time
 import math
-
+from sys import argv
 
 #Sets up the curses window
 def startup():
@@ -34,14 +34,16 @@ def background(gen, nodelay):
                 #and blank space are periods
                 else:
                     stdscr.addch( y, x, ord('.') )
+                stdscr.addstr(height, 1, "gen: "+str(gen))
+                stdscr.addstr(height, 10, "[r]un [s]tep [n]ew [d]el [q]uit")
+                if nodelay:
+                    stdscr.addstr(height, 42, "[running]")
+                else:
+                    stdscr.addstr(height, 42, "[paused] ")
             except curses.error:
-                pass
-    stdscr.addstr(height, 1, "gen: "+str(gen))
-    stdscr.addstr(height, 20, "[s]tep [n]ew [q]uit")
-    if nodelay:
-        stdscr.addstr(height, 42, "[running]")
-    else:
-        stdscr.addstr(height, 42, "[paused] ")
+                shutdown()
+                raise Exception("Curses broke, probably your width or height is too large for the visible screen")
+    
     #after drawing refresh the window
     stdscr.refresh()
 
@@ -74,6 +76,13 @@ def addCell(x,y,cells):
         if cell.x == x and cell.y == y:
             return cells
     cells.append(Cell(x,y))
+    return cells
+
+def delCell(x,y,cells):
+    for cell in cells:
+        if cell.x == x and cell.y == y:
+            cells.remove(cell)
+            return cells
     return cells
 
 #Finds adjacent alive cells
@@ -140,10 +149,34 @@ def mv_term_cursor(ux, uy):
         #stdscr.addch( uy, ux, ord('.'))
         stdscr.move(uy,ux)
 
+
 ux = 0
 uy = 0
 width = 50
 height = 30
+
+if len(argv) > 1 and len(argv) != 3:
+    print "Incorrect quantity of arguments provided; please provide only width and height (i.e. both or neither)"
+    print "Using defaults: width 50 height 30"
+    time.sleep(3)
+elif len(argv) == 3:
+    this, w, h = argv
+    try:
+        width = int(w)
+        height = int(h)
+    except:
+        print "Failed to interpret arguments as integers"
+        print "Using defaults: width 50 height 30"
+        width = 50
+        height = 30 
+        time.sleep(3)
+    if width < 5 or height < 5:
+        print "The minimum dimensions available are 5, please enter values greater than this"
+        print "Using defaults: width 50 height 30"
+        width = 50
+        height = 30
+        time.sleep(3)
+
 
 if __name__ == "__main__":
     stdscr = curses.initscr()
@@ -166,9 +199,10 @@ if __name__ == "__main__":
             generation = generation+1
         if c == ord('r'):
             if nodelay: stdscr.timeout(-1) 
-            else:       stdscr.timeout(100)
+            else:       stdscr.timeout(75)
             nodelay = nodelay ^ 1
         elif c == ord('n'):         cells = addCell(ux, uy, cells)
+        elif c == ord('d'):         cells = delCell(ux, uy, cells)
         elif c == curses.KEY_RIGHT: ux = ux + 1 if ux < width-1 else ux
         elif c == curses.KEY_LEFT:  ux = ux - 1 if ux > 0 else ux
         elif c == curses.KEY_UP:    uy = uy - 1 if uy > 0 else uy
