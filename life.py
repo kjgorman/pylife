@@ -41,7 +41,7 @@ def background(gen, nodelay):
     if nodelay:
         stdscr.addstr(height, 42, "[running]")
     else:
-        stdscr.addstr(height, 42, "[paused]")
+        stdscr.addstr(height, 42, "[paused] ")
     #after drawing refresh the window
     stdscr.refresh()
 
@@ -137,7 +137,8 @@ def step(cells):
       
 #Used for manipulating the terminal cursor for cell placement
 def mv_term_cursor(ux, uy):
-        stdscr.addch( uy, ux, ord('.'))
+        #stdscr.addch( uy, ux, ord('.'))
+        stdscr.move(uy,ux)
 
 ux = 0
 uy = 0
@@ -154,17 +155,20 @@ if __name__ == "__main__":
         background(generation, nodelay)
         fillCells(cells)
         mv_term_cursor(ux, uy)
-        c = stdscr.getch() #by default a blocking function
-        
-        if nodelay: time.sleep(1)
-        
+        #by default a blocking function
+        #when [r] is pressed we move to
+        #a timeout period of a tenth of 
+        #a second for animation. 
+        c = stdscr.getch()
+
         if c == ord('s') or nodelay:
             cells = step(cells)
             generation = generation+1
-        elif c == ord('r'):
-            nodelay = 1 if nodelay == 0 else 0         
-            stdscr.nodelay(nodelay)
-        elif c == ord('n'):         cells = addCell(ux+1, uy, cells)
+        if c == ord('r'):
+            if nodelay: stdscr.timeout(-1) 
+            else:       stdscr.timeout(100)
+            nodelay = nodelay ^ 1
+        elif c == ord('n'):         cells = addCell(ux, uy, cells)
         elif c == curses.KEY_RIGHT: ux = ux + 1 if ux < width-1 else ux
         elif c == curses.KEY_LEFT:  ux = ux - 1 if ux > 0 else ux
         elif c == curses.KEY_UP:    uy = uy - 1 if uy > 0 else uy

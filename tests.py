@@ -17,6 +17,8 @@ def adjacency():
             print "Test failed on cell: ", cell.x, cell.y
             failed = failed+1
     print "Test passed with ", str(len(cells)-failed), " of ", str(len(cells)), " successful"
+    return 1 if failed == 0 else 0
+
 def adjacentDeadPoints():
     print "Testing for adjacent dead points" 
     cell = life.Cell(10,10)
@@ -24,6 +26,7 @@ def adjacentDeadPoints():
     points = life.adjacentPoints(cell, cells)
     if len(points) != 8:
         print "Test failed, expected 8 adjacent points but found: ", str(len(points))
+        return 0
     else:
         print "Test passed with 8 adjacent points"
     print "Adding cell"
@@ -31,8 +34,10 @@ def adjacentDeadPoints():
     points = life.adjacentPoints(cell, cells)
     if len(points) != 7:
         print "Test failed, expected 7 adjacent points but found: ", str(len(points))        
+        return 0
     else:
         print "Test passed with 7 adjacent points"
+        return 1
 
 def testDeath():
     print "Test singleton cell death"
@@ -44,8 +49,10 @@ def testDeath():
         pass
     if len(cells) != 0:
         print "Test failed, cell alive"
+        return 0
     else:
         print "Test passed"
+        return 1
 
 def testSpawn():
     print "Testing cell spawning"
@@ -61,6 +68,7 @@ def testSpawn():
         pass
     if len(cells) != 4:
         print "Test failed, no new cell, cells length is now: ", str(len(cells))
+        return 0
     else:
         sys.stdout.write("Cell spawned")
         correct_pos = False
@@ -72,6 +80,7 @@ def testSpawn():
         if not correct_pos:
             print " incorrectly"
         print "Test passed" if correct_pos else "Test failed"
+    return 1 if correct_pos else 0
 
 def testBlinker():
     print "Testing the 'blinker'"
@@ -91,14 +100,15 @@ def testBlinker():
          print "("+str(cell.x)+","+str(cell.y)+")"
     if not containsCellAt(9,11,cells):
         print "Test failed, did not spawn left hand side"
-        return
+        return 0
     if not containsCellAt(11,11,cells):
         print "Test failed, did not spawn right hand side"
-        return
+        return 0
     if not containsCellAt(10,11,cells):
         print "Test failed, did not persist centre"
-        return
+        return 0
     print "Test passed"
+    return 1
 
 def containsCellAt(x,y,cells):
     for cell in cells:
@@ -108,7 +118,9 @@ def containsCellAt(x,y,cells):
 
 def runTests():
     tests = [adjacency,adjacentDeadPoints,testDeath,testSpawn,testBlinker]
+    passed = 0
     for func in tests:
-        func()
+        passed = passed + func()
         print "================================================"
+    print "Tests completed with "+str(passed)+" of "+str(len(tests))+" successful"
 runTests()
